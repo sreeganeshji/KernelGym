@@ -14,7 +14,7 @@ setup(name="ganesh_cpp_ext", ext_modules=[
                                         "-DTORCH_TARGET_VERSION=0x020a000000000000",
                                    ]
                                },
-                               py_limited_api=True)], # Build 1 wheel across multiple py versions
-                               cmdclass={"build_ext",cpp_extension.BuildExtension},
-                                options={"bdist_wheel": {"py_limited_api": "cp39"}}
-                                )
+                            py_limited_api=True)], # Build 1 wheel across multiple py versions
+                            cmdclass={"build_ext",cpp_extension.BuildExtension},
+                            options={"bdist_wheel": {"py_limited_api": "cp39"}}
+                        )
