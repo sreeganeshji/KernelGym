@@ -3,7 +3,7 @@ from torch.utils import cpp_extension
 
 setup(name="ganesh_cpp_ext", ext_modules=[
     cpp_extension.CppExtension("ganesh_cpp_ext_mod",
-                               ["rmsnorm.cpp"],
+                               ["muladd.cpp"],
                                extra_compile_args={
                                    "cxx": [
                                        # define Py_LIMITED_API with min version 3.9 to expose only the stable
