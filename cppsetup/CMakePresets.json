@@ -16,6 +16,13 @@
             "cacheVariables": {
                 "CMAKE_CXX_COMPILER": "/usr/bin/g++-14"
             }
+        },
+        {
+            "name": "MSI",
+            "binaryDir": "${sourceDir}/Build",
+            "cacheVariables": {
+                
+            }
         }
     ]
 }
