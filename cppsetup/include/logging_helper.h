@@ -1,5 +1,5 @@
 #pragma once
-#include<string.h>
+#include<string>
 namespace MyLogging {
 
     class Logger {

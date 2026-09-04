@@ -5,5 +5,6 @@
 *.cubin
 *.fatbin
 References/
-Build/
+[bB]uild/
 __pycache__/
+.vscode/

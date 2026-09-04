@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(HelloWorld)
+project(ArrayAdd LANGUAGES CUDA CXX)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(HelloExe)
 
@@ -14,4 +16,21 @@ BASE_DIRS
     include
 FILES
     include/logging_helper.h
+)
+
+add_library(Math)
+
+target_sources(Math
+    PRIVATE
+        mathhelpers.cpp
+
+    PUBLIC
+    FILE_SET HEADERS
+    FILES
+    include/math_helper.h
+)
+
+target_link_libraries(HelloExe
+PRIVATE
+Math
 )
