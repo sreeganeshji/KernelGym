@@ -9,27 +9,28 @@
 #include <torch/csrc/stable/c/shim.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <iostream>
 
-#include <Python.h>
+// #include <Python.h>
 
 namespace ts = torch::stable;
 
 
-extern "C" {
+// extern "C" {
 
-PyObject* PyInit__C(void) {
-    static struct PyModuleDef moduleDef = {
-        PyModuleDef_HEAD_INIT,
-        "_C",   // module name
-        NULL,   // module documentation
-        -1,     // per-interpreter state size
-        NULL    // methods
-    };
+// PyObject* PyInit__C(void) {
+//     static struct PyModuleDef moduleDef = {
+//         PyModuleDef_HEAD_INIT,
+//         "_C",   // module name
+//         NULL,   // module documentation
+//         -1,     // per-interpreter state size
+//         NULL    // methods
+//     };
 
-    return PyModule_Create(&moduleDef);
-}
+//     return PyModule_Create(&moduleDef);
+// }
 
-}
+// }
 
 __global__
 void mulladd_kernel(const float* a, const float* b, float c, float* res, int N) {
@@ -41,6 +42,7 @@ void mulladd_kernel(const float* a, const float* b, float c, float* res, int N) 
 }
 
 ts::Tensor muladd(ts::Tensor a, ts::Tensor b, double c) {
+    std::cout<<"Calling host to deliiver to cuda"<<std::endl;
     STD_TORCH_CHECK(a.sizes().equals(b.sizes()), "Shapes mismatch");
     STD_TORCH_CHECK(a.scalar_type() == torch::headeronly::ScalarType::Float, "Not float");
     STD_TORCH_CHECK(b.scalar_type() == torch::headeronly::ScalarType::Float, "Not float");
@@ -49,7 +51,7 @@ ts::Tensor muladd(ts::Tensor a, ts::Tensor b, double c) {
 
     ts::Tensor a_cnt = ts::contiguous(a);
     ts::Tensor b_cnt = ts::contiguous(b);
-    ts::Tensor res = ts::empty_like(a);
+    ts::Tensor res = ts::empty_like(a_cnt);
 
     int N = a.numel();
     void* cudaStream_ptr = nullptr;
@@ -58,11 +60,12 @@ ts::Tensor muladd(ts::Tensor a, ts::Tensor b, double c) {
 
         
     // Divide up N into num_blocks (gridDim) and num of threads per block
-    mulladd_kernel<<<ceil(N/128),128, 0, cudaStream>>>(a.const_data_ptr<float>(), b.const_data_ptr<float>(), c, res.mutable_data_ptr<float>(), N);
+    int threads = 128;
+    mulladd_kernel<<<ceil((N+threads-1)/threads), threads, 0, cudaStream>>>(a_cnt.const_data_ptr<float>(), b_cnt.const_data_ptr<float>(), c, res.mutable_data_ptr<float>(), N);
 
     return res;
 }
 
-STABLE_TORCH_LIBRARY_IMPL(mymuladd, CUDA, m) {
+STABLE_TORCH_LIBRARY_IMPL(my_extension, CUDA, m) {
     m.impl("mymuladd", TORCH_BOX(&muladd));
 }

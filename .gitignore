@@ -6,3 +6,4 @@
 *.fatbin
 References/
 Build/
+__pycache__/

@@ -3,7 +3,8 @@
 #include <torch/csrc/stable/tensor.h>
 #include <torch/headeronly/macros/Macros.h>
 #include <torch/headeronly/core/ScalarType.h>
-#include <python.h>
+#include <Python.h>
+#include <iostream>
 
 namespace ts = torch::stable;
 
@@ -23,6 +24,7 @@ extern "C" {
 }
 
 ts::Tensor custom_mathmul_cpu(ts::Tensor a, ts::Tensor b, double c) {
+    std::cout<<"Running just on the cpu"<<std::endl;
     STD_TORCH_CHECK(a.scalar_type() == b.scalar_type(), "Type mismatch");
     STD_TORCH_CHECK(a.device() == b.device(), "Device mismatch");
     STD_TORCH_CHECK(a.sizes() == b.sizes(), "Size mismatch");
@@ -42,10 +44,10 @@ ts::Tensor custom_mathmul_cpu(ts::Tensor a, ts::Tensor b, double c) {
     return res;
 }
 
-STABLE_TORCH_LIBRARY(mathmul, m){
-    m.def("mathmul(a:Tensor, b:Tensor, c:Float)->Tensor");
+STABLE_TORCH_LIBRARY(my_extension, m){
+    m.def("mymuladd(Tensor a, Tensor b, float c)->Tensor");
 }
 
-STABLE_TORCH_LIBRARY_IMPL(mathmul, CPU, m){
-    m.impl("mathmul", TORCH_BOX(&custom_mathmul_cpu));
+STABLE_TORCH_LIBRARY_IMPL(my_extension, CPU, m){
+    m.impl("mymuladd", TORCH_BOX(&custom_mathmul_cpu));
 }
