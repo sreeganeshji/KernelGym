@@ -2,7 +2,14 @@ cmake_minimum_required(VERSION 3.28)
 
 project(ArrayAdd LANGUAGES CUDA CXX)
 set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_CUDA_STANDARD 20)
+
+add_executable(ArryAdd)
+target_sources(ArryAdd
+    PRIVATE
+        add_arrays.cpp
+)
 
 add_executable(HelloExe)
 

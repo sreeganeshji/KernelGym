@@ -8,3 +8,4 @@ References/
 [bB]uild/
 __pycache__/
 .vscode/
+CMakeFiles
