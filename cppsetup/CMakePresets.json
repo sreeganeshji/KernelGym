@@ -9,6 +9,13 @@
                 "CMAKE_CUDA_HOST_COMPILER": "/usr/bin/g++-13",
                 "CMAKE_CUDA_ARCHITECTURES": "61"
             }
+        },
+        {
+            "name": "3080Ti",
+            "binaryDir": "${sourceDir}/Build",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "/usr/bin/g++-14"
+            }
         }
     ]
 }
