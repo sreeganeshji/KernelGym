@@ -73,3 +73,9 @@ float* AddArraysCudaOld() {
     
     return res;
 }
+
+/*
+PMPP
+
+
+*/
