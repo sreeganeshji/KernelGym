@@ -24,7 +24,10 @@
             "name": "MSI",
             "binaryDir": "${sourceDir}/Build",
             "cacheVariables": {
-                
+                "CMAKE_CUDA_ARCHITECTURES": "89",
+                "CMAKE_CXX_COMPILER": "/usr/bin/g++-15",
+                "CMAKE_CUDA_COMPILER": "/usr/local/cuda-13.3/bin/nvcc",
+                "CMAKE_CUDA_HOST_COMPILER": "/usr/bin/g++-15"
             }
         }
     ]
