@@ -46,5 +46,13 @@ int main() {
 
     AddArraysCuda();
 
+    float* res_old = AddArraysCudaOld();
+
+    for(int i=0; i<4; i++) {
+        println("res_old[{}]: {}", i, res_old[i]);
+    }
+
+    free(res_old);
+
     return 0;
 }

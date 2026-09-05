@@ -9,9 +9,10 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 add_executable(ArryAdd)
 target_sources(ArryAdd
     PRIVATE
-        add_arrays.cpp
-        add_arrays.cu
-        add_arrays.h
+        add_arrays/add_arrays.cpp
+        add_arrays/add_arrays.cu
+        add_arrays/add_arrays.h
+        add_arrays/add_arrays_old.cu
 )
 
 add_executable(HelloExe)
