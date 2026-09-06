@@ -15,6 +15,12 @@ target_sources(ArryAdd
         add_arrays/add_arrays_old.cu
 )
 
+add_executable(CudaArch)
+target_sources(CudaArch 
+PRIVATE
+z_architecture_and_scheduling/querying_device_props.cu
+)
+
 add_executable(HelloExe)
 
 target_sources(HelloExe
