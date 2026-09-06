@@ -21,6 +21,15 @@ PRIVATE
 z_architecture_and_scheduling/querying_device_props.cu
 )
 
+add_executable(Reductions)
+target_sources(Reductions
+PRIVATE
+reduction/reduce_sum.cu
+reduction/reduction.cpp
+
+PUBLIC
+reduction/reduction.h)
+
 add_executable(HelloExe)
 
 target_sources(HelloExe
