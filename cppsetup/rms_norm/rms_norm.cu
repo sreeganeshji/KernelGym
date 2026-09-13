@@ -4,6 +4,8 @@
 #include <iostream>
 #include <random>
 # include <assert.h>
+#include <cmath>
+#include <algorithm>
 
 using namespace std;
 
@@ -65,6 +67,17 @@ void divide_x_by_kernel(float* nums, float div, int N) {
     }
 }
 
+__global__
+void divide_x_by_kernel(float* nums, float* sum, int N) {
+    
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if(i < N) {
+        float rms = sqrtf(*sum/N);
+        nums[i] = nums[i]/rms;
+    }
+}
+
 vector<float> rms_norm(std::vector<float>& nums) {
     /*
     Square each num
@@ -98,7 +111,9 @@ vector<float> rms_norm(std::vector<float>& nums) {
 
     rms_norm_kernel1<<<gridDim, block_dim>>>(nums_d, sum_d, N);
 
-    cudaDeviceSynchronize();
+    CUDA_CHECK(cudaGetLastError());
+
+    // CUDA_CHECK(cudaDeviceSynchronize());
 
     // float* sum = static_cast<float*>(malloc(sizeof(float)));
     float sum;
@@ -107,6 +122,8 @@ vector<float> rms_norm(std::vector<float>& nums) {
 
     cout<<"Got back sum "<< sum<<endl;
 
+    /*
+    We don't need to pass these, or call cudaDeviceSync because we're passing the sum_d directly to the next kernel
     float rms = sum/N;
 
     cout <<"rms before root: "<<rms<<endl;
@@ -115,11 +132,16 @@ vector<float> rms_norm(std::vector<float>& nums) {
 
     cout <<"Rms: "<<rms<<endl;
 
+    */
+
     dim3 divGridDim(max(static_cast<int>(ceil(static_cast<float>(N)/block_dim)), 1));
 
     // cudaMemcpy(sum_d, &rms, sizeof(float), cudaMemcpyHostToDevice);
 
-    divide_x_by_kernel<<<divGridDim, blockDim>>>(nums_d, rms, N);
+    // divide_x_by_kernel<<<divGridDim, blockDim>>>(nums_d, rms, N);
+    divide_x_by_kernel<<<divGridDim, blockDim>>>(nums_d, sum_d, N);
+    CUDA_CHECK(cudaGetLastError());
+
 
     // float rms_x[N];
 
@@ -168,7 +190,7 @@ float max_abs_diff(vector<float>& v1, vector<float>& v2) {
     float max_diff = 0.0f;
 
     for(int i=0; i<N; i++) {
-        max_diff = max(max_diff, abs(v1[i] - v2[i]));
+        max_diff = std::max(max_diff, std::fabs(v1[i] - v2[i]));
     }
 
     return max_diff;
