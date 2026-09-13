@@ -1,5 +1,5 @@
 #include <cuda.h>
-#include <print>
+#include <iostream>
 __global__
 void AddArraysKernelOld(float* a, float* b, float* res, int N) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -11,7 +11,7 @@ void AddArraysKernelOld(float* a, float* b, float* res, int N) {
 
 float* AddArraysCudaOld() {
     using namespace std;
-    println("Executing addarr old");
+    cout << "Executing addarr old\n";
 
     float* a;
     float* b;
@@ -51,10 +51,12 @@ float* AddArraysCudaOld() {
 
     cudaMemcpy(res, res_d, sizeof(float)*N, cudaMemcpyDeviceToHost);
 
-    println("Called kernel. LastErr: {} - {}", cudaGetErrorName(lastErr), cudaGetErrorString(lastErr));
+    cout << "Called kernel. LastErr: " << cudaGetErrorName(lastErr)
+         << " - " << cudaGetErrorString(lastErr) << '\n';
 
     for(int i=0; i<5; i++) {
-        println("i: {}, a: {}, b: {}, res:{}, diff: {}", i, a[i], b[i], res[i], (3.0f - res[i]));
+        cout << "i: " << i << ", a: " << a[i] << ", b: " << b[i]
+             << ", res: " << res[i] << ", diff: " << (3.0f - res[i]) << '\n';
     }
 
     float total_err = 0.0f;
@@ -63,7 +65,7 @@ float* AddArraysCudaOld() {
         total_err += 3.0f - res[i];
     }
 
-    println("total accumulated err: {}", total_err);
+    cout << "total accumulated err: " << total_err << '\n';
 
     cudaFree(a_d);
     cudaFree(b_d);

@@ -3,7 +3,9 @@ cmake_minimum_required(VERSION 4.4)
 project(ArrayAdd LANGUAGES CUDA CXX)
 set(CMAKE_CXX_STANDARD 23)
 
-set(CMAKE_CUDA_STANDARD 23)
+if(NOT DEFINED CMAKE_CUDA_STANDARD)
+    set(CMAKE_CUDA_STANDARD 23)
+endif()
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 add_executable(ArryAdd)

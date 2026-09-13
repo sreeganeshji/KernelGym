@@ -1,13 +1,15 @@
 #include <cuda.h>
 #include <vector>
-#include <print>
+#include <iostream>
 
 #define CUDA_CHECK(call) checkCuda((call), #call, __FILE__, __LINE__)
 
 void checkCuda(cudaError_t result, const char* expression, const char* file, int line){
     if(!(result == cudaError::cudaSuccess)) {
-        std::println("Caught error: {}: {}", cudaGetErrorName(result), cudaGetErrorString(result));
-        std::println("Details: {},\n file: {},\n line: {}", expression, file, line);
+        std::cerr << "Caught error: " << cudaGetErrorName(result) << ": "
+                  << cudaGetErrorString(result) << '\n';
+        std::cerr << "Details: " << expression << ",\n file: " << file
+                  << ",\n line: " << line << '\n';
     }
 }
 
@@ -35,6 +37,29 @@ __global__
 
         if(i == 0) {
             *sum = nums[0];
+        }
+    }
+
+    __global__ 
+    void segmented_reduce_kernel(float* nums, float* sum) {
+        int segment_offset = blockDim.x * 2 * blockIdx.x;
+        int i = segment_offset + threadIdx.x;
+        int t = threadIdx.x;
+
+        __shared__ float inp_s[1024];
+
+        inp_s[t] = nums[i] + nums[i+blockDim.x];
+
+        for(int s=blockDim.x/2; s>=1; s = s/2) {
+            __syncthreads();
+            if(t<s) {
+                inp_s[t] = inp_s[t] + inp_s[t+s];
+            }
+        }
+
+        if(t == 0) {
+            // *sum = inp_s[0];
+            atomicAdd(sum, inp_s[0]);
         }
     }
 
@@ -170,10 +195,10 @@ __global__
 
     float ReduceSum(std::vector<float> nums) {
         int maxThreadsPerBlock = 1024;
-        dim3 dimGrid(ceil(nums.size()/(2*maxThreadsPerBlock) + 1));
+        dim3 dimGrid(max(static_cast<int>(ceil(nums.size()/(2*maxThreadsPerBlock))), 1));
         dim3 dimBlock(1024);
         
-        std::println("Got nums of size: {}", nums.size());
+        std::cout << "Got nums of size: " << nums.size() << '\n';
 
         float* nums_d;
         CUDA_CHECK(cudaMalloc(&nums_d, sizeof(float)*nums.size()));
@@ -185,7 +210,7 @@ __global__
 
         // printf("Callinng with dimGrid: %d, dimBlock: %d", dimGrid, dimBlock);
 
-        reduce_kernel_mem_div<<<1, dimBlock>>>(nums_d, sum_d);
+        segmented_reduce_kernel<<<dimGrid, dimBlock>>>(nums_d, sum_d);
         cudaDeviceSynchronize();
         CUDA_CHECK(cudaMemcpy(&sum, sum_d, sizeof(float), cudaMemcpyDeviceToHost));
 

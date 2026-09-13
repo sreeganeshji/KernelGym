@@ -1,69 +1,61 @@
-#include <print>
+#include <iostream>
 
 int main(){
     using namespace std;
-    println("hello from cuda");
+    cout << "hello from cuda\n";
 
     int count;
     cudaGetDeviceCount(&count);
-    println("Devicecount: {}", count);
+    cout << "Devicecount: " << count << '\n';
 
     cudaDeviceProp devProp;
     cudaGetDeviceProperties(&devProp, 0);
 
-    println("maxBlocksPerMultiProcessor: {}", devProp.maxBlocksPerMultiProcessor);
-    println("maxGridSize: {}", devProp.maxGridSize);
-    println("maxThreadsDim: {}", devProp.maxThreadsDim);
-    println("name: {}", devProp.name);
-println("major: {}", devProp.major);
-println("minor: {}", devProp.minor);
+        cout << "name: " << devProp.name << '\n';
+        cout << "major: " << devProp.major << '\n';
+        cout << "minor: " << devProp.minor << '\n';
 
-println("multiProcessorCount: {}", devProp.multiProcessorCount);
-println("warpSize: {}", devProp.warpSize);
-println("maxBlocksPerMultiProcessor: {}", devProp.maxBlocksPerMultiProcessor);
-println("maxThreadsPerMultiProcessor: {}", devProp.maxThreadsPerMultiProcessor);
-println("maxThreadsPerBlock: {}", devProp.maxThreadsPerBlock);
+        cout << "multiProcessorCount: " << devProp.multiProcessorCount << '\n';
+        cout << "warpSize: " << devProp.warpSize << '\n';
+        cout << "maxBlocksPerMultiProcessor: " << devProp.maxBlocksPerMultiProcessor << '\n';
+        cout << "maxThreadsPerMultiProcessor: " << devProp.maxThreadsPerMultiProcessor << '\n';
+        cout << "maxThreadsPerBlock: " << devProp.maxThreadsPerBlock << '\n';
 
-println("maxThreadsDim: [{}, {}, {}]",
-        devProp.maxThreadsDim[0],
-        devProp.maxThreadsDim[1],
-        devProp.maxThreadsDim[2]);
+        cout << "maxThreadsDim: [" << devProp.maxThreadsDim[0] << ", "
+         << devProp.maxThreadsDim[1] << ", " << devProp.maxThreadsDim[2] << "]\n";
+        cout << "maxGridSize: [" << devProp.maxGridSize[0] << ", "
+         << devProp.maxGridSize[1] << ", " << devProp.maxGridSize[2] << "]\n";
 
-println("maxGridSize: [{}, {}, {}]",
-        devProp.maxGridSize[0],
-        devProp.maxGridSize[1],
-        devProp.maxGridSize[2]);
+        cout << "totalGlobalMem: " << devProp.totalGlobalMem << '\n';
+        cout << "totalConstMem: " << devProp.totalConstMem << '\n';
+        cout << "sharedMemPerBlock: " << devProp.sharedMemPerBlock << '\n';
+        cout << "sharedMemPerBlockOptin: " << devProp.sharedMemPerBlockOptin << '\n';
+        cout << "sharedMemPerMultiprocessor: " << devProp.sharedMemPerMultiprocessor << '\n';
+        cout << "reservedSharedMemPerBlock: " << devProp.reservedSharedMemPerBlock << '\n';
 
-println("totalGlobalMem: {}", devProp.totalGlobalMem);
-println("totalConstMem: {}", devProp.totalConstMem);
-println("sharedMemPerBlock: {}", devProp.sharedMemPerBlock);
-println("sharedMemPerBlockOptin: {}", devProp.sharedMemPerBlockOptin);
-println("sharedMemPerMultiprocessor: {}", devProp.sharedMemPerMultiprocessor);
-println("reservedSharedMemPerBlock: {}", devProp.reservedSharedMemPerBlock);
+        cout << "regsPerBlock: " << devProp.regsPerBlock << '\n';
+        cout << "regsPerMultiprocessor: " << devProp.regsPerMultiprocessor << '\n';
+        cout << "l2CacheSize: " << devProp.l2CacheSize << '\n';
+        cout << "persistingL2CacheMaxSize: " << devProp.persistingL2CacheMaxSize << '\n';
+        cout << "memoryBusWidth: " << devProp.memoryBusWidth << '\n';
+        cout << "memPitch: " << devProp.memPitch << '\n';
 
-println("regsPerBlock: {}", devProp.regsPerBlock);
-println("regsPerMultiprocessor: {}", devProp.regsPerMultiprocessor);
-println("l2CacheSize: {}", devProp.l2CacheSize);
-println("persistingL2CacheMaxSize: {}", devProp.persistingL2CacheMaxSize);
-println("memoryBusWidth: {}", devProp.memoryBusWidth);
-println("memPitch: {}", devProp.memPitch);
+        cout << "concurrentKernels: " << devProp.concurrentKernels << '\n';
+        cout << "asyncEngineCount: " << devProp.asyncEngineCount << '\n';
+        cout << "cooperativeLaunch: " << devProp.cooperativeLaunch << '\n';
+        cout << "streamPrioritiesSupported: " << devProp.streamPrioritiesSupported << '\n';
 
-println("concurrentKernels: {}", devProp.concurrentKernels);
-println("asyncEngineCount: {}", devProp.asyncEngineCount);
-println("cooperativeLaunch: {}", devProp.cooperativeLaunch);
-println("streamPrioritiesSupported: {}", devProp.streamPrioritiesSupported);
+        cout << "unifiedAddressing: " << devProp.unifiedAddressing << '\n';
+        cout << "managedMemory: " << devProp.managedMemory << '\n';
+        cout << "concurrentManagedAccess: " << devProp.concurrentManagedAccess << '\n';
+        cout << "canMapHostMemory: " << devProp.canMapHostMemory << '\n';
+        cout << "memoryPoolsSupported: " << devProp.memoryPoolsSupported << '\n';
 
-println("unifiedAddressing: {}", devProp.unifiedAddressing);
-println("managedMemory: {}", devProp.managedMemory);
-println("concurrentManagedAccess: {}", devProp.concurrentManagedAccess);
-println("canMapHostMemory: {}", devProp.canMapHostMemory);
-println("memoryPoolsSupported: {}", devProp.memoryPoolsSupported);
-
-println("ECCEnabled: {}", devProp.ECCEnabled);
-println("integrated: {}", devProp.integrated);
-println("pciBusID: {}", devProp.pciBusID);
-println("pciDeviceID: {}", devProp.pciDeviceID);
-println("pciDomainID: {}", devProp.pciDomainID);
+        cout << "ECCEnabled: " << devProp.ECCEnabled << '\n';
+        cout << "integrated: " << devProp.integrated << '\n';
+        cout << "pciBusID: " << devProp.pciBusID << '\n';
+        cout << "pciDeviceID: " << devProp.pciDeviceID << '\n';
+        cout << "pciDomainID: " << devProp.pciDomainID << '\n';
 
     return 0;
 }

@@ -3,7 +3,7 @@
 #include <print>
 
 int main() {
-    std::vector<float> nums(2048, 1.0f);
+    std::vector<float> nums(2048*1000, 1.0f);
 
     float sumcuda = reduction::ReduceSum(nums);
 

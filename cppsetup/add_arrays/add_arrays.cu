@@ -1,5 +1,5 @@
 #include <cuda.h>
-#include <print>
+#include <iostream>
 #include "add_arrays.h"
 
 __global__
@@ -38,13 +38,15 @@ void AddArraysCuda() {
 
     cudaError_t error = cudaGetLastError();
 
-    std::println("Cuda last error: {}", cudaGetErrorString(error));
+    std::cout << "Cuda last error: " << cudaGetErrorString(error) << '\n';
 
     error = cudaDeviceSynchronize();
-    std::println("Cuda error: {}", cudaGetErrorString(error));
+    std::cout << "Cuda error: " << cudaGetErrorString(error) << '\n';
 
     for(int i=0; i<5; i++) {
-        std::println("a[{}]: {}, b[{}]: {}, res[{}]: {}", i, a[i], i, b[i], i, res[i]);
+        std::cout << "a[" << i << "]: " << a[i]
+                  << ", b[" << i << "]: " << b[i]
+                  << ", res[" << i << "]: " << res[i] << '\n';
     }
 
     float sum_err = 0.0f;
@@ -52,7 +54,7 @@ void AddArraysCuda() {
         sum_err += 3.0f - res[i];
     }
 
-    std::println("Received res {}", sum_err);
+    std::cout << "Received res " << sum_err << '\n';
 
     cudaFree(a);
     cudaFree(b);
