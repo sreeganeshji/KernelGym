@@ -44,6 +44,12 @@ FILES
     include/logging_helper.h
 )
 
+add_executable(RmsNorm)
+target_sources(RmsNorm
+PRIVATE
+rms_norm/rms_norm.cu
+)
+
 add_library(Math)
 
 target_sources(Math

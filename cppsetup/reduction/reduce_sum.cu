@@ -12,6 +12,65 @@ void checkCuda(cudaError_t result, const char* expression, const char* file, int
 }
 
 namespace reduction{
+
+__global__
+    void ReduceSumKernalSimple(float* nums, float* sum) {
+        /*
+        blockdim: 1024
+
+        */
+
+        int i = threadIdx.x;
+        
+        for(int s=blockDim.x; s>=1 ; s = s/2){
+
+            if(i < s) {
+                nums[i] = nums[i] + nums[i + s];
+
+            }
+                            
+            __syncthreads();
+
+        }
+
+        if(i == 0) {
+            *sum = nums[0];
+        }
+    }
+
+    __global__
+    void reduce_kernel_mem_div(float* nums, float* sum) {
+        /*
+        blockdim: 1024
+        we fetch mem in 32 bit chunks, each thread is accessing far away location leading to divergence.
+        This would mean
+        */
+
+        __shared__ float inp_s[1024];
+        // For the first iter, read the mem and write to the first half of the shared_mem. 
+        
+        int i = threadIdx.x;
+        
+        inp_s[i] = nums[i] + nums[i+blockDim.x];
+
+        __syncthreads();
+
+        for(int s=blockDim.x/2; s>=1 ; s = s/2){
+
+            if(i < s) {
+                inp_s[i] = inp_s[i] + inp_s[i + s];
+
+            }
+                            
+            __syncthreads();
+
+        }
+
+        if(i == 0) {
+            *sum = inp_s[0];
+        }
+    }
+
     __global__
     void ReduceSumKernel(float* nums, float* sum) {
         /*
@@ -23,21 +82,52 @@ namespace reduction{
             0   2   4   6
             0       4
             0
+
+            1024 threads per block
+            N = 1024
+            warp = 32
+            collect sum values in alternative blocks, then every 4th, etc.
+            0 : 0 + 1
+            2 : 2 + 3
+            ...
+            1023 : 1023 + 1024
+
+            sync
+            0 : 0 + 2
+            4 : 4 + 6
+            8 : 8 + 10
+            1021: 1021 + 1023
+
+            sync
+            ...
+            0 : 0 + 512
+
+            You could take all these indices and x 2 to reach 2048 elements.
+
+            
         */
     //    printf("Reached the device");
         int i = blockDim.x * blockIdx.x + threadIdx.x;
 
         // if (i<10) printf("reached i: %d, blockId: %d, blockdim: %d \n", i, blockIdx.x, blockDim.x);
-
-        for(int s=1; s <= blockDim.x ; s*=2) {
-            // if(i*s %2 == 0) {
-            if(i*s + s < blockDim.x * 2) {
-                // if (i<20) printf("threadID: %d, i:%d, s: %d, i*s: %d, i*s+s: %d \n", threadIdx.x, i, s, i*s, i*s+s);
-                // if (i<20) ("threadID: %d, i:%d, s: %d, nums[%d]: %f, nums[%d]: %f \n", threadIdx.x, i, i*s, nums[i*s], i*s+s, nums[i*s+s]);
-                nums[i*s] = nums[i*s] + nums[i*s+s];
+        
+        for(int s=1; s <= blockDim.x/2; s *=2) {
+            if((i % (2*s)) == 0) {
+                nums[i] = nums[i] + nums[i+s];
             }
+
             __syncthreads();
         }
+
+        // for(int s=1; s <= blockDim.x ; s*=2) {
+        //     // if(i*s %2 == 0) {
+        //     if(i*s + s < blockDim.x * 2) {
+        //         // if (i<20) printf("threadID: %d, i:%d, s: %d, i*s: %d, i*s+s: %d \n", threadIdx.x, i, s, i*s, i*s+s);
+        //         // if (i<20) ("threadID: %d, i:%d, s: %d, nums[%d]: %f, nums[%d]: %f \n", threadIdx.x, i, i*s, nums[i*s], i*s+s, nums[i*s+s]);
+        //         nums[i*s] = nums[i*s] + nums[i*s+s];
+        //     }
+        //     __syncthreads();
+        // }
 
         if(i==0)
         {
@@ -45,6 +135,38 @@ namespace reduction{
         }
     }
 
+    __global__
+    void ReduceSumKernel2(float* nums, float* sum) {
+        /*
+        Try to move the results to the first half of the array
+        0 : 0 + 512
+        1 : 1 + 513
+        ..
+        511: 511 + 1023
+
+        __ sync
+
+        0 : 0 + 256
+        1 : 1 + 257
+        ...
+        255: 255 + 511
+
+        __sync..
+
+        0 : 0 + 1
+        */
+       int i = threadIdx.x;
+
+        for (int s=blockDim.x / 2; s>=1; s/=2) {
+            if(i < s) {
+               nums[i] = nums[i] + nums[i+s]; 
+            }
+
+            __syncthreads();
+        }
+
+        *sum = nums[0];
+    }
 
     float ReduceSum(std::vector<float> nums) {
         int maxThreadsPerBlock = 1024;
@@ -63,7 +185,7 @@ namespace reduction{
 
         // printf("Callinng with dimGrid: %d, dimBlock: %d", dimGrid, dimBlock);
 
-        ReduceSumKernel<<<dimGrid, dimBlock>>>(nums_d, sum_d);
+        reduce_kernel_mem_div<<<1, dimBlock>>>(nums_d, sum_d);
         cudaDeviceSynchronize();
         CUDA_CHECK(cudaMemcpy(&sum, sum_d, sizeof(float), cudaMemcpyDeviceToHost));
 
