@@ -161,6 +161,36 @@ __global__
     }
 
     __global__
+    void reduce_sum_coarse(float* nums, float* sum) {
+        const int blockdim = 1024;
+        __shared__ float inp_s[blockdim];
+        int coarse_factor = 2;
+        int i = (blockIdx.x * blockDim.x *2 * coarse_factor) + threadIdx.x;
+        int t = threadIdx.x;
+
+        inp_s[t] = nums[i];
+        
+        for(int c=1; c<2*coarse_factor; c++){
+            inp_s[t] += nums[i+blockDim.x*c];
+
+            if(t == 0) {
+                printf("Reading index %d \n", i+blockDim.x*c);
+            }
+        }
+
+        for(int s=blockDim.x/2; s >=1; s = s/2) {
+            __syncthreads();
+            if(t < s) {
+                inp_s[t] = inp_s[t] + inp_s[t+s];
+            }
+        }
+
+        if(t == 0) {
+            atomicAdd(sum, inp_s[0]);
+        }
+    }
+
+    __global__
     void ReduceSumKernel2(float* nums, float* sum) {
         /*
         Try to move the results to the first half of the array
@@ -210,7 +240,7 @@ __global__
 
         // printf("Callinng with dimGrid: %d, dimBlock: %d", dimGrid, dimBlock);
 
-        segmented_reduce_kernel<<<dimGrid, dimBlock>>>(nums_d, sum_d);
+        reduce_sum_coarse<<<dimGrid, dimBlock>>>(nums_d, sum_d);
         cudaDeviceSynchronize();
         CUDA_CHECK(cudaMemcpy(&sum, sum_d, sizeof(float), cudaMemcpyDeviceToHost));
 

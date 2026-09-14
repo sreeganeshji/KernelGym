@@ -26,6 +26,38 @@ void reduce1(float* nums, int N) {
 }
 
 __global__
+void rms_norm_coarsed_kernel(float* nums, float* sum, int N) {
+
+    if(threadIdx.x == 0) ("started rms_norm_coarsed_kernel with blockDim: %d, blockid: %d \n", blockDim.x, blockIdx.x);
+    __shared__ float rms_block[1024];
+    int coarse = 1;
+    int segment = (blockIdx.x * blockDim.x * 2 * coarse);
+    int i = segment + threadIdx.x;
+    int t = threadIdx.x;
+
+    float rms_sum = 0.0f;
+
+    for (int c=0; c<coarse*2; c++) {
+        float val = nums[i + (blockDim.x)*c];
+        if(t==0) printf("adding i:%d, numi: %f \n",i + (blockDim.x)*c, val );
+        rms_sum += val * val;
+    }
+
+    rms_block[t] = rms_sum;
+
+    for(int s=1; s<blockDim.x/2; s=s/2) {
+        __syncthreads();
+
+        if (t<s) {
+            rms_block[t] += rms_block[t+s];
+        }
+    }
+
+
+    atomicAdd(sum, rms_block[0]);
+}
+
+__global__
 void rms_norm_kernel1(float* nums, float* sum, int N) {
 
     __shared__ float rms_block[1024]; //block scoped blockDim=1024
@@ -109,7 +141,7 @@ vector<float> rms_norm(std::vector<float>& nums) {
 
     cout<<"Startinng kernel with gridDim:"<<gridDim.x<<" and blockDim:"<<blockDim.x<<endl;
 
-    rms_norm_kernel1<<<gridDim, block_dim>>>(nums_d, sum_d, N);
+    rms_norm_coarsed_kernel<<<gridDim, block_dim>>>(nums_d, sum_d, N);
 
     CUDA_CHECK(cudaGetLastError());
 
