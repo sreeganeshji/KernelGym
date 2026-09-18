@@ -26,18 +26,22 @@ void reduce1(float* nums, int N) {
 }
 
 __global__
-void rms_norm_coarsed_kernel(float* nums, float* sum, int N) {
+void rms_norm_coarsed_kernel(float* nums, int N) {
 
-    if(threadIdx.x == 0) ("started rms_norm_coarsed_kernel with blockDim: %d, blockid: %d \n", blockDim.x, blockIdx.x);
+    if(threadIdx.x == 0) printf("started rms_norm_coarsed_kernel with blockDim: %d, blockid: %d \n", blockDim.x, blockIdx.x);
     __shared__ float rms_block[1024];
-    int coarse = 1;
+    __shared__ float rms_val;
+    int num_ele_block = 2*blockDim.x;
+    int coarse = (N + num_ele_block - 1)/num_ele_block;
+    if(threadIdx.x == 0) printf("Coarse factor %d \n", coarse);
     int segment = (blockIdx.x * blockDim.x * 2 * coarse);
     int i = segment + threadIdx.x;
     int t = threadIdx.x;
 
-    float rms_sum = 0.0f;
+    float rms_sum = (i<N) ? nums[i] * nums[i] : 0.0f;
 
-    for (int c=0; c<coarse*2; c++) {
+    for (int c=1; c < coarse*2; c++) {
+        if((i+(blockDim.x * c)) >= N) break;
         float val = nums[i + (blockDim.x)*c];
         if(t==0) printf("adding i:%d, numi: %f \n",i + (blockDim.x)*c, val );
         rms_sum += val * val;
@@ -53,8 +57,64 @@ void rms_norm_coarsed_kernel(float* nums, float* sum, int N) {
         }
     }
 
+    if(threadIdx.x == 0) {
+    //  atomicAdd(sum, rms_block[0]);
+    float sum = rms_block[0];
+     rms_val = 1/sqrt(sum/N);
+    }
 
-    atomicAdd(sum, rms_block[0]);
+    __syncthreads();
+
+    for(int c=0; c<2*coarse; c++) {
+        int idx = segment + (blockDim.x * c) + t;
+        if(idx >= N) break;
+
+        nums[idx] = nums[idx] * rms_val;
+    }
+}
+
+__global__
+void square_sum_coarsed_kernel(float* nums, float* sum, int N) {
+
+    if(threadIdx.x == 0) printf("started square_sum_coarsed_kernel with blockDim: %d, blockid: %d \n", blockDim.x, blockIdx.x);
+    __shared__ float rms_block[1024];
+    int num_ele_block = 2*blockDim.x;
+    int coarse = (N + num_ele_block - 1)/num_ele_block;
+    if(threadIdx.x == 0) printf("Coarse factor %d \n", coarse);
+    int segment = (blockIdx.x * blockDim.x * 2 * coarse);
+    int i = segment + threadIdx.x;
+    int t = threadIdx.x;
+
+    float rms_sum = (i<N) ? nums[i] * nums[i] : 0.0f;
+
+    // int c = 1;
+    // while((i+blockDim.x * c) < N) {
+    //     float val = nums[i + (blockDim.x)*c];
+    //     if(t==0) printf("adding i:%d, numi: %f \n",i + (blockDim.x)*c, val );
+    //     rms_sum += val * val;
+    //     c++;
+    // }
+
+    for (int c=1; c < coarse*2; c++) {
+        if((i+(blockDim.x * c)) >= N) break;
+        float val = nums[i + (blockDim.x)*c];
+        if(t==0) printf("adding i:%d, numi: %f \n",i + (blockDim.x)*c, val );
+        rms_sum += val * val;
+    }
+
+    rms_block[t] = rms_sum;
+
+    for(int s=blockDim.x/2; s>=1; s=s/2) {
+        __syncthreads();
+
+        if (t<s) {
+            rms_block[t] += rms_block[t+s];
+        }
+    }
+
+    if(threadIdx.x == 0) {
+     atomicAdd(sum, rms_block[0]);
+    }
 }
 
 __global__
@@ -110,7 +170,28 @@ void divide_x_by_kernel(float* nums, float* sum, int N) {
     }
 }
 
-vector<float> rms_norm(std::vector<float>& nums) {
+vector<float>& rms_norm_fused(std::vector<float>& nums) {
+
+    float* nums_d;
+
+    size_t byte_size = sizeof(float) * nums.size();
+
+    CUDA_CHECK(cudaMalloc(&nums_d, byte_size));
+    
+    CUDA_CHECK(cudaMemcpy(nums_d, nums.data(), byte_size, cudaMemcpyHostToDevice));
+
+    rms_norm_coarsed_kernel<<<1, 128>>>(nums_d, nums.size());
+
+    CUDA_CHECK(cudaGetLastError());
+
+    CUDA_CHECK(cudaMemcpy(nums.data(), nums_d, byte_size, cudaMemcpyDeviceToHost));
+
+    CUDA_CHECK(cudaFree(nums_d));
+
+    return nums;
+}
+
+vector<float> rms_norm_two_kernel(std::vector<float>& nums) {
     /*
     Square each num
     Add them up
@@ -141,7 +222,9 @@ vector<float> rms_norm(std::vector<float>& nums) {
 
     cout<<"Startinng kernel with gridDim:"<<gridDim.x<<" and blockDim:"<<blockDim.x<<endl;
 
-    rms_norm_coarsed_kernel<<<gridDim, block_dim>>>(nums_d, sum_d, N);
+    // rms_norm_coarsed_kernel<<<gridDim, block_dim>>>(nums_d, sum_d, N);
+    // setting gridDim=1 to have 1 block handle one hidden layer later
+    square_sum_coarsed_kernel<<<1, 128>>>(nums_d, sum_d, N); 
 
     CUDA_CHECK(cudaGetLastError());
 
@@ -152,7 +235,7 @@ vector<float> rms_norm(std::vector<float>& nums) {
 
     CUDA_CHECK(cudaMemcpy(&sum, sum_d, sizeof(float), cudaMemcpyDeviceToHost));
 
-    cout<<"Got back sum "<< sum<<endl;
+    cout<<"Got back GPU square sum "<< sum<<endl;
 
     /*
     We don't need to pass these, or call cudaDeviceSync because we're passing the sum_d directly to the next kernel
@@ -250,12 +333,12 @@ int main(){
         cpu_sum += num * num;
     }
 
-    cout <<"CPU sum is "<<cpu_sum<<endl;
+    cout <<"CPU square sum is "<<cpu_sum<<endl;
     vector<float> cpu_res = rms_norm_cpu(nums);
-    vector<float> res = rms_norm(nums);
+    vector<float> res = rms_norm_fused(nums);
 
     for(int i=0; i<10; i++) {
-        cout<<"nums["<<i<<"]: "<<nums[i]<<" res["<<i<<"] = "<<res[i]<<" cpu_res["<<i<<"] = "<<cpu_res[i]<<endl;
+        cout<<"nums["<<i<<"]: "<<nums[i]<<" gpu_res["<<i<<"] = "<<res[i]<<" cpu_res["<<i<<"] = "<<cpu_res[i]<<endl;
     }
 
     //Finding max abs diff.
