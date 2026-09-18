@@ -45,7 +45,7 @@ void rms_norm_coarsed_kernel(float* nums, float* sum, int N) {
 
     rms_block[t] = rms_sum;
 
-    for(int s=1; s<blockDim.x/2; s=s/2) {
+    for(int s=blockDim.x/2; s>=1; s=s/2) {
         __syncthreads();
 
         if (t<s) {

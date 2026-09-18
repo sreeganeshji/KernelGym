@@ -64,6 +64,10 @@ target_sources(Math
     include/math_helper.h
 )
 
+target_compile_options(RmsNorm PRIVATE
+    $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CUDA>>:-G>
+)
+
 target_link_libraries(HelloExe
 PRIVATE
 Math

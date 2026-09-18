@@ -3,12 +3,20 @@
     "configurePresets": [
         {
             "name": "gbangalore-dev0",
-            "binaryDir": "${sourceDir}/Build",
+            "binaryDir": "${sourceDir}/Build/${presetName}",
             "cacheVariables": {
                 "CMAKE_CUDA_COMPILER": "/usr/local/cuda-12.6/bin/nvcc",
                 "CMAKE_CUDA_HOST_COMPILER": "/usr/bin/g++-13",
                 "CMAKE_CUDA_ARCHITECTURES": "61",
                 "CMAKE_CUDA_STANDARD": "20"
+            }
+        },
+        {
+            "name": "gbangalore-dev0-debug",
+            "inherits": "gbangalore-dev0",
+            "binaryDir": "${sourceDir}/Build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
             }
         },
         {
