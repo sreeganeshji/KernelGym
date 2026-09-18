@@ -9,6 +9,8 @@
 
 using namespace std;
 
+#define DELTA 0.1e-10
+
 // #define CUDA_CHECK()
 #define CUDA_CHECK(call) checkCuda((call), #call, __FILE__, __LINE__)
 
@@ -60,7 +62,7 @@ void rms_norm_coarsed_kernel(float* nums, int N) {
     if(threadIdx.x == 0) {
     //  atomicAdd(sum, rms_block[0]);
     float sum = rms_block[0];
-     rms_val = 1/sqrt(sum/N);
+     rms_val = 1/sqrt(sum/N + DELTA);
     }
 
     __syncthreads();
@@ -170,7 +172,7 @@ void divide_x_by_kernel(float* nums, float* sum, int N) {
     }
 }
 
-vector<float>& rms_norm_fused(std::vector<float>& nums) {
+vector<float> rms_norm_fused(std::vector<float>& nums) {
 
     float* nums_d;
 
@@ -286,7 +288,7 @@ vector<float> rms_norm_cpu(vector<float> nums) {
     }
 
     float rms = sq_sum/N;
-    rms = sqrt(rms);
+    rms = sqrt(rms + DELTA);
 
     cout <<"CPU RMS "<<rms<<endl;
 
@@ -311,7 +313,48 @@ float max_abs_diff(vector<float>& v1, vector<float>& v2) {
     return max_diff;
 }
 
-int main(){
+vector<vector<float>> rms_norm_weighted_cpu(vector<vector<float>> x, vector<float> w) {
+    
+}
+
+int main() {
+    // rms_norm_with_weights
+    using namespace std;
+
+    mt19937 rd(42);
+    uniform_real_distribution<float> dist(-1.0f, 1.0f);
+
+    int H = 3000;
+    int T = 10;
+    vector<vector<float>> x (H*T);
+
+    for(int t=0; t<T; t++) {
+        vector<float> hid (H);
+        for(int h=0; h<H; h++) {
+            hid.push_back(dist(rd));
+        }
+
+        x.push_back(hid);
+    }
+
+    vector<float> w(H);
+
+    for(int h=0; h<H; h++) {
+        w.push_back(dist(rd));
+    }
+
+    vector<vector<float>> cpu_res = rms_norm_weighted_cpu(x, w);
+
+    vector<vector<float>> gpu_res = rms_norm_weighted_gpu(x, w);
+
+    for(int t=0; t<2; t++) {
+        for(int h=0; h<3; h++) {
+            printf("x[%d][%d]: %f, cpu_res: %f, gpu_res: %f \n", t, h, x[t][h], cpu_res[t][h], gpu_res[t][h]);
+        }
+    }
+}
+
+int main_rms_norm(){
     using namespace std;
 
     // random_device dev;
@@ -323,7 +366,7 @@ int main(){
     vector<float> nums(N);
 
     for(float& num : nums) {
-        num = dist(r);
+        num = 0.0f; //dist(r);
         // num = 2.0f;
     }
 
@@ -335,10 +378,11 @@ int main(){
 
     cout <<"CPU square sum is "<<cpu_sum<<endl;
     vector<float> cpu_res = rms_norm_cpu(nums);
+    auto num_org = nums;
     vector<float> res = rms_norm_fused(nums);
 
     for(int i=0; i<10; i++) {
-        cout<<"nums["<<i<<"]: "<<nums[i]<<" gpu_res["<<i<<"] = "<<res[i]<<" cpu_res["<<i<<"] = "<<cpu_res[i]<<endl;
+        cout<<"nums["<<i<<"]: "<<num_org[i]<<" gpu_res["<<i<<"] = "<<res[i]<<" cpu_res["<<i<<"] = "<<cpu_res[i]<<endl;
     }
 
     //Finding max abs diff.
